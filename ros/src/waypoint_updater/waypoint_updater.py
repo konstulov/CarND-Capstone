@@ -3,6 +3,7 @@
 import numpy as np
 import rospy
 from geometry_msgs.msg import PoseStamped
+from std_msgs.msg import Int32
 from styx_msgs.msg import Lane, Waypoint
 from scipy.spatial import KDTree
 
@@ -45,7 +46,7 @@ class WaypointUpdater(object):
         #self.base_waypoints = None
         self.waypoints_2d = None
         self.waypoint_tree = None
-        rospy.loop()
+        self.loop()
         #rospy.spin()
 
     def loop(self):
@@ -121,7 +122,7 @@ class WaypointUpdater(object):
         self.base_waypoints = waypoints
         if not self.waypoints_2d:
             self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y]
-                                 for waypoint is waypoints.waypoints]
+                                 for waypoint in waypoints.waypoints]
             self.waypoint_tree = KDTree(self.waypoints_2d)
 
     def traffic_cb(self, msg):
