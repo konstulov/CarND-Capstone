@@ -51,9 +51,13 @@ class WaypointUpdater(object):
     def loop(self):
         rate = rospy.Rate(50)
         while not rospy.is_shutdown():
+            rospy.loginfo('loop(self): while not rospy.is_shutdown()')
+            rospy.loginfo('bool(self.pose) = %s, bool(self.base_waypoints) = %s'
+                          % (bool(self.pose), bool(self.base_waypoints)))
             #if self.pose and self.base_lane:
-            if self.pose and self.base_lane: # TBR
+            if self.pose and self.base_waypoints: # TBR
                 # Get closest waypoint
+		rospy.loginfo('loop(self): if pose and base_lane')
                 closest_waypoint_idx = self.get_closest_waypoint_idx() # TBR
                 self.publish_waypoints(closest_waypoint_idx)
                 #self.publish_waypoints()
@@ -64,6 +68,7 @@ class WaypointUpdater(object):
         y = self.pose.pose.position.y
         closest_idx = self.waypoint_tree.query([x, y], 1)[1]
         # Check if closest is ahead or hehind vehicle closest_coord = self.waypoints_2d[closest_idx]
+        closest_coord = self.waypoints_2d[closest_idx]
         prev_coord = self.waypoints_2d[closest_idx-1]
 
         # Equation for hyperplane through closest_coords
@@ -117,9 +122,11 @@ class WaypointUpdater(object):
         return temp
 
     def pose_cb(self, msg):
+        rospy.loginfo('pose_cb(self, msg): %s' % bool(msg))
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
+        rospy.loginfo('waypoints_cb(self, waypoints): %s' % bool(waypoints))
         self.base_waypoints = waypoints
         if not self.waypoints_2d:
             self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y]
