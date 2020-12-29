@@ -51,13 +51,11 @@ class WaypointUpdater(object):
     def loop(self):
         rate = rospy.Rate(50)
         while not rospy.is_shutdown():
-            rospy.loginfo('loop(self): while not rospy.is_shutdown()')
-            rospy.loginfo('bool(self.pose) = %s, bool(self.base_waypoints) = %s'
+            rospy.loginfo('waypoint_updater.py: loop(): bool(self.pose) = %s, bool(self.base_waypoints) = %s'
                           % (bool(self.pose), bool(self.base_waypoints)))
             #if self.pose and self.base_lane:
             if self.pose and self.base_waypoints: # TBR
                 # Get closest waypoint
-		rospy.loginfo('loop(self): if pose and base_lane')
                 closest_waypoint_idx = self.get_closest_waypoint_idx() # TBR
                 self.publish_waypoints(closest_waypoint_idx)
                 #self.publish_waypoints()
@@ -83,7 +81,7 @@ class WaypointUpdater(object):
         return closest_idx
 
     def publish_waypoints(self, closest_idx):
-	lane = Lane()
+        lane = Lane()
         lane.header = self.base_waypoints.header
         lane.waypoints = self.base_waypoints.waypoints[closest_idx: closest_idx + LOOKAHEAD_WPS]
         self.final_waypoints_pub.publish(lane)
@@ -126,7 +124,7 @@ class WaypointUpdater(object):
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
-        rospy.loginfo('waypoints_cb(self, waypoints): %s' % bool(waypoints))
+        rospy.loginfo('waypoint_updater.py: waypoints_cb(%s)' % bool(waypoints))
         self.base_waypoints = waypoints
         if not self.waypoints_2d:
             self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y]
