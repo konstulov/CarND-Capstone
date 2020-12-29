@@ -39,12 +39,8 @@ class Controller(object):
             self.throttle_controller.reset()
             return 0., 0., 0.
 
+        orig_current_vel = current_vel
         current_vel = self.vel_lpf.filt(current_vel)
-
-        rospy.logwarn("dbw_enabled: %s" % dbw_enabled)
-        rospy.logwarn("current_vel: {0}".format(current_vel))
-        rospy.logwarn("linear_vel: {0}".format(linear_vel))
-        rospy.logwarn("anuglar_vel: {0}".format(angular_vel))
 
         steering = self.yaw_controller.get_steering(linear_vel, angular_vel, current_vel)
 
@@ -66,5 +62,11 @@ class Controller(object):
             decel = max(vel_error, self.decel_limit)
             brake = abs(decel)*self.vehicle_mass*self.wheel_radius # Torque N*m
             rospy.logwarn("brake: {0}".format(brake))
+
+        rospy.logwarn(
+            "Controller.control(\n\tcurrent_vel=%s,\n\tdbw_enabled=%s,\n\tlinear_vel=%s,\n\tangular_vel=%s)"
+            % (orig_current_vel, dbw_enabled, linear_vel, angular_vel))
+        rospy.logwarn("Controller.control(): current_vel=%s, steering=%s, throttle=%s, brake=%s"
+                      % (current_vel, steering, throttle, brake))
 
         return throttle, brake, steering
