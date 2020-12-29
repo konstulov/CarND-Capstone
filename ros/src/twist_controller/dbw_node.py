@@ -96,8 +96,11 @@ class DBWNode(object):
                                                                                    self.dbw_enabled,
                                                                                    self.linear_vel,
                                                                                    self.angular_vel)
+                rospy.loginfo('dbw_node.py: loop(): if not None in (...)')
             if self.dbw_enabled:
                 self.publish(self.throttle, self.brake, self.steering)
+                rospy.loginfo('dbw_node.py: loop(): if self.dbw_enabled: self.publish(%s, %s, %s)'
+                              % (self.throttle, self.brake, self.steering))
             rate.sleep()
 
     def dbw_enabled_cb(self, msg):
