@@ -41,7 +41,10 @@ class Controller(object):
 
         current_vel = self.vel_lpf.filt(current_vel)
 
-        # rospy.logwarn("anuglar vel: {0}".format(angular_vel))
+        rospy.logwarn("dbw_enabled: %s" % dbw_enabled)
+        rospy.logwarn("current_vel: {0}".format(current_vel))
+        rospy.logwarn("linear_vel: {0}".format(linear_vel))
+        rospy.logwarn("anuglar_vel: {0}".format(angular_vel))
 
         steering = self.yaw_controller.get_steering(linear_vel, angular_vel, current_vel)
 
@@ -57,9 +60,11 @@ class Controller(object):
         if linear_vel == 0. and current_vel < 0.1:
             throttle = 0
             brake = 400 # N*m - to hold the car in place if we are stopped at a light. Acceleration - 1m/s^2
+            rospy.logwarn("brake: 400")
         elif throttle < 0.1 and vel_error < 0:
             throttle = 0
             decel = max(vel_error, self.decel_limit)
             brake = abs(decel)*self.vehicle_mass*self.wheel_radius # Torque N*m
+            rospy.logwarn("brake: {0}".format(brake))
 
         return throttle, brake, steering
