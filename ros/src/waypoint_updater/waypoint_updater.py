@@ -88,8 +88,8 @@ class WaypointUpdater(object):
         self.final_waypoints_pub.publish(lane)
         if time.time() - self.prev_log_time >= 1:
             self.prev_log_time = time.time()
-            rospy.logwarn('waypoint_updater.py: publish_waypoints(): len(self.base_waypoints.waypoints) = %s, len(self.waypoints) = %s, closest_idx = %s'
-                          % (len(self.base_waypoints.waypoints), len(self.waypoints), closest_idx))
+            rospy.logwarn('waypoint_updater.py: publish_waypoints(): len(self.base_waypoints.waypoints) = %s, len(lane.waypoints) = %s, closest_idx = %s'
+                          % (len(self.base_waypoints.waypoints), len(lane.waypoints), closest_idx))
         #final_lane = self.generate_lane()
         #self.final_waypoints_pub.publish(final_lane)
 
