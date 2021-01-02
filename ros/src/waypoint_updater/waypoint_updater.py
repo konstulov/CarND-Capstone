@@ -48,6 +48,7 @@ class WaypointUpdater(object):
         self.waypoints_2d = None
         self.waypoint_tree = None
         self.prev_log_time = time.time() - 1
+        self.pose_prev_log_time = time.time() - 1
         self.loop()
 
     def loop(self):
@@ -124,7 +125,9 @@ class WaypointUpdater(object):
         return temp
 
     def pose_cb(self, msg):
-        rospy.logwarn('pose_cb(self, msg): %s' % msg)
+        if time.time() - self.pose_prev_log_time >= 1:
+            self.pose_prev_log_time = time.time()
+            rospy.logwarn('pose_cb(self, msg): %s' % msg)
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
