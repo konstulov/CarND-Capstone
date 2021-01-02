@@ -2,6 +2,7 @@ from pid import PID
 from lowpass import LowPassFilter
 from yaw_controller import YawController
 import rospy
+import time
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
@@ -32,6 +33,7 @@ class Controller(object):
         self.wheel_radius = wheel_radius
 
         self.last_time = rospy.get_time()
+        self.prev_log_time = time.time() - 1
 
     def control(self, current_vel, dbw_enabled, linear_vel, angular_vel):
         # Return throttle, brake, steer
@@ -56,17 +58,17 @@ class Controller(object):
         if linear_vel == 0. and current_vel < 0.1:
             throttle = 0
             brake = 400 # N*m - to hold the car in place if we are stopped at a light. Acceleration - 1m/s^2
-            rospy.logwarn("brake: 400")
         elif throttle < 0.1 and vel_error < 0:
             throttle = 0
             decel = max(vel_error, self.decel_limit)
             brake = abs(decel)*self.vehicle_mass*self.wheel_radius # Torque N*m
-            rospy.logwarn("brake: {0}".format(brake))
 
-        rospy.logwarn(
-            "Controller.control(\n\tcurrent_vel=%s,\n\tdbw_enabled=%s,\n\tlinear_vel=%s,\n\tangular_vel=%s)"
-            % (orig_current_vel, dbw_enabled, linear_vel, angular_vel))
-        rospy.logwarn("Controller.control(): current_vel=%s, steering=%s, throttle=%s, brake=%s"
-                      % (current_vel, steering, throttle, brake))
+        if time.time() - self.prev_log_time >= 1:
+            self.prev_log_time = time.time()
+            rospy.logwarn(
+                "Controller.control(\n\tcurrent_vel=%s,\n\tdbw_enabled=%s,\n\tlinear_vel=%s,\n\tangular_vel=%s)"
+                % (orig_current_vel, dbw_enabled, linear_vel, angular_vel))
+            rospy.logwarn("Controller.control(): current_vel=%s, steering=%s, throttle=%s, brake=%s"
+                          % (current_vel, steering, throttle, brake))
 
         return throttle, brake, steering

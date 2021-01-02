@@ -2,6 +2,7 @@
 
 import numpy as np
 import rospy
+import time
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Int32
 from styx_msgs.msg import Lane, Waypoint
@@ -46,13 +47,12 @@ class WaypointUpdater(object):
         self.base_waypoints = None # TBR
         self.waypoints_2d = None
         self.waypoint_tree = None
+        self.prev_log_time = time.time() - 1
         self.loop()
 
     def loop(self):
         rate = rospy.Rate(50)
         while not rospy.is_shutdown():
-            rospy.loginfo('waypoint_updater.py: loop(): bool(self.pose) = %s, bool(self.base_waypoints) = %s'
-                          % (bool(self.pose), bool(self.base_waypoints)))
             #if self.pose and self.base_lane:
             if self.pose and self.base_waypoints: # TBR
                 # Get closest waypoint
@@ -81,8 +81,10 @@ class WaypointUpdater(object):
         return closest_idx
 
     def publish_waypoints(self, closest_idx):
-        rospy.logwarn('waypoint_updater.py: publish_waypoints(): len(self.waypoints_2d) = %s, closest_idx = %s'
-                      % (len(self.waypoints_2d), closest_idx))
+        if time.time() - self.prev_log_time >= 1:
+            self.prev_log_time = time.time()
+            rospy.logwarn('waypoint_updater.py: publish_waypoints(): len(self.waypoints_2d) = %s, closest_idx = %s'
+                          % (len(self.waypoints_2d), closest_idx))
         lane = Lane()
         lane.header = self.base_waypoints.header
         lane.waypoints = self.base_waypoints.waypoints[closest_idx: closest_idx + LOOKAHEAD_WPS]
