@@ -93,7 +93,7 @@ double PurePursuit::calcCurvature(geometry_msgs::Point target) const
     kappa = numerator / denominator;
     if (!(prev_log_flag_ & 8)) {
       prev_log_flag_ |= 8;
-      ROS_ERROR_STREAM("PurePursuit::calcCurvature: kappa = " << numerator << " / " denominator << " = " << kappa);
+      ROS_ERROR_STREAM("PurePursuit::calcCurvature: kappa = " << numerator << " / " << denominator << " = " << kappa);
     }
   }
   else
@@ -274,6 +274,10 @@ geometry_msgs::Twist PurePursuit::calcTwist(double curvature, double cmd_velocit
   {
     //ROS_ERROR_STREAM("Not following");
     twist.angular.z = current_velocity_.twist.linear.x * curvature;
+    if (!(prev_log_flag_ & 32)) {
+      prev_log_flag_ |= 32;
+      ROS_ERROR_STREAM("PurePursuit::calcTwist: twist.angular.z = " << current_velocity_.twist.linear.x << " * " << curvature << " = " << twist.angular.z);
+    }
   }
   else
   {
@@ -393,7 +397,7 @@ geometry_msgs::TwistStamped PurePursuit::go()
   }
   if (!(prev_log_flag_ & 1)) {
     prev_log_flag_ |= 1;
-    ROS_ERROR_STREAM("next waypoint = " <<  num_of_next_waypoint_);
+    ROS_ERROR_STREAM("next waypoint = " << num_of_next_waypoint_);
   }
 
   // if g_linear_interpolate_mode is false or next waypoint is first or last
