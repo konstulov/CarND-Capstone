@@ -237,8 +237,8 @@ bool PurePursuit::verifyFollowing() const
   getLinearEquation(current_waypoints_.getWaypointPosition(1), current_waypoints_.getWaypointPosition(2), &a, &b, &c);
   double displacement = getDistanceBetweenLineAndPoint(current_pose_.pose.position, a, b, c);
   double relative_angle = getRelativeAngle(current_waypoints_.getWaypointPose(1), current_pose_.pose);
-  if (!(prev_log_flag_ & 2)) {
-    prev_log_flag_ |= 2;
+  if (!(prev_log_flag_ & 4)) {
+    prev_log_flag_ |= 4;
     ROS_ERROR("side diff : %lf , angle diff : %lf",displacement,relative_angle);
   }
 
@@ -281,8 +281,8 @@ geometry_msgs::Twist PurePursuit::calcTwist(double curvature, double cmd_velocit
 void PurePursuit::getNextWaypoint()
 {
   int path_size = static_cast<int>(current_waypoints_.getSize());
-  if (!(prev_log_flag_ & 3)) {
-    prev_log_flag_ |= 3;
+  if (!(prev_log_flag_ & 8)) {
+    prev_log_flag_ |= 8;
     ROS_ERROR_STREAM("PurePursuit::getNextWaypoint(): path_size = " << path_size);
   }
 
@@ -309,8 +309,8 @@ void PurePursuit::getNextWaypoint()
     if (pd > lookahead_distance_)
     {
       num_of_next_waypoint_ = i;
-      if (!(prev_log_flag_ & 4)) {
-        prev_log_flag_ |= 4;
+      if (!(prev_log_flag_ & 16)) {
+        prev_log_flag_ |= 16;
         ROS_ERROR_STREAM("PurePursuit::getNextWaypoint(): path_size = " << path_size << ", wp = " << i << ", lookahead_distance_ = " << lookahead_distance_ << ", dist = " << pd);
       }
       return;
@@ -389,8 +389,8 @@ geometry_msgs::TwistStamped PurePursuit::go()
     ROS_WARN("lost next waypoint");
     return outputZero();
   }
-  if (!(prev_log_flag_ & 5)) {
-    prev_log_flag_ |= 5;
+  if (!(prev_log_flag_ & 1)) {
+    prev_log_flag_ |= 1;
     ROS_ERROR_STREAM("next waypoint = " <<  num_of_next_waypoint_);
   }
 
@@ -411,8 +411,8 @@ geometry_msgs::TwistStamped PurePursuit::go()
     return outputZero();
   }
 
-  if (!(prev_log_flag_ & 1)) {
-    prev_log_flag_ |= 1;
+  if (!(prev_log_flag_ & 2)) {
+    prev_log_flag_ |= 2;
     ROS_ERROR("next_target : ( %lf , %lf , %lf)", position_of_next_target_.x, position_of_next_target_.y, position_of_next_target_.z);
   }
 
