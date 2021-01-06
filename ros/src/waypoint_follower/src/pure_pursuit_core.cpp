@@ -89,7 +89,13 @@ double PurePursuit::calcCurvature(geometry_msgs::Point target) const
   double numerator = 2 * calcRelativeCoordinate(target, current_pose_.pose).y;
 
   if (denominator != 0)
+  {
     kappa = numerator / denominator;
+    if (!(prev_log_flag_ & 8)) {
+      prev_log_flag_ |= 8;
+      ROS_ERROR_STREAM("PurePursuit::calcCurvature: kappa = " << numerator << " / " denominator << " = " << kappa);
+    }
+  }
   else
   {
     if(numerator > 0)
@@ -281,10 +287,6 @@ geometry_msgs::Twist PurePursuit::calcTwist(double curvature, double cmd_velocit
 void PurePursuit::getNextWaypoint()
 {
   int path_size = static_cast<int>(current_waypoints_.getSize());
-  if (!(prev_log_flag_ & 8)) {
-    prev_log_flag_ |= 8;
-    ROS_ERROR_STREAM("PurePursuit::getNextWaypoint(): path_size = " << path_size);
-  }
 
   // if waypoints are not given, do nothing.
   if (path_size == 0)
