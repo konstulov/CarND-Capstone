@@ -30,6 +30,7 @@
 
 #include "ros/ros.h"
 #include "pure_pursuit_core.h"
+#include <string>
 
 namespace waypoint_follower
 {
@@ -217,23 +218,33 @@ bool PurePursuit::interpolateNextTarget(int next_waypoint, geometry_msgs::Point 
 
     // check intersection is between end and start
     double interval = getPlaneDistance(end, start);
+    bool ret_flag = false;
+    std::string selected_target = "false";
     if (getPlaneDistance(target1, end) < interval)
     {
       // ROS_INFO("result : target1");
       *next_target = target1;
-      return true;
+      selected_target = "target1";
+      ret_flag = true;
     }
     else if (getPlaneDistance(target2, end) < interval)
     {
       // ROS_INFO("result : target2");
       *next_target = target2;
-      return true;
+      selected_target = "target2";
+      ret_flag = true;
     }
-    else
+    /*else
     {
       // ROS_INFO("result : false ");
       return false;
+    }*/
+    if (!(prev_log_flag_ & 64)) {
+      prev_log_flag_ |= 64;
+      ROS_ERROR_STREAM("PurePursuit::interpolateNextTarget(): (r, d, s) = (" << search_radius << ", " << d << ", " << s
+                       << "); selected_target = " << selected_target);
     }
+    return ret_flag;
   }
 }
 
