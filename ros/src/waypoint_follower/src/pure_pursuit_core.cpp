@@ -241,8 +241,8 @@ bool PurePursuit::interpolateNextTarget(int next_waypoint, geometry_msgs::Point 
     }*/
     if (!(prev_log_flag_ & 64)) {
       prev_log_flag_ |= 64;
-      ROS_ERROR_STREAM("PurePursuit::interpolateNextTarget(): (r, d, s) = (" << search_radius << ", " << d << ", " << s
-                       << "); selected_target = " << selected_target);
+      ROS_ERROR_STREAM("PurePursuit::interpolateNextTarget(): (r, d, s, i) = (" << search_radius << ", " << d << ", " << s
+                       << ", " << interval << "); selected_target = " << selected_target);
     }
     return ret_flag;
   }
