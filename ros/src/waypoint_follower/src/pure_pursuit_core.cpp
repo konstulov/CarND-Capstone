@@ -86,14 +86,16 @@ double PurePursuit::calcCurvature(geometry_msgs::Point target) const
 {
   double kappa;
   double denominator = pow(getPlaneDistance(target, current_pose_.pose.position), 2);
-  double numerator = 2 * calcRelativeCoordinate(target, current_pose_.pose).y;
+  geometry_msgs::Point rel_coord = calcRelativeCoordinate(target, current_pose_.pose);
+  double numerator = 2 * rel_coord.y;
 
   if (denominator != 0)
   {
     kappa = numerator / denominator;
     if (!(prev_log_flag_ & 8)) {
       prev_log_flag_ |= 8;
-      ROS_ERROR_STREAM("PurePursuit::calcCurvature: kappa = " << numerator << " / " << denominator << " = " << kappa);
+      ROS_ERROR_STREAM("PurePursuit::calcCurvature(): rel_coord = (" << rel_coord.x << ", " << rel_coord.y
+                       << "), kappa = " << numerator << " / " << denominator << " = " << kappa);
     }
   }
   else
