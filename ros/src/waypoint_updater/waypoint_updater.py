@@ -2,7 +2,6 @@
 
 import numpy as np
 import rospy
-import time
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Int32
 from styx_msgs.msg import Lane, Waypoint
@@ -47,8 +46,8 @@ class WaypointUpdater(object):
         self.base_waypoints = None # TBR
         self.waypoints_2d = None
         self.waypoint_tree = None
-        self.prev_log_time = time.time() - 1
-        self.pose_prev_log_time = time.time() - 1
+        self.prev_log_time = rospy.get_time() - 1
+        self.pose_prev_log_time = rospy.get_time() - 1
         self.loop()
 
     def loop(self):
@@ -86,8 +85,8 @@ class WaypointUpdater(object):
         lane.header = self.base_waypoints.header
         lane.waypoints = self.base_waypoints.waypoints[closest_idx: closest_idx + LOOKAHEAD_WPS]
         self.final_waypoints_pub.publish(lane)
-        if time.time() - self.prev_log_time >= 1:
-            self.prev_log_time = time.time()
+        if rospy.get_time() - self.prev_log_time >= 1:
+            self.prev_log_time = rospy.get_time()
             rospy.logwarn('rospy.get_time(): %.2f: waypoint_updater.py: publish_waypoints(): len(self.base_waypoints.waypoints) = %s, len(lane.waypoints) = %s, closest_idx = %s'
                           % (rospy.get_time(), len(self.base_waypoints.waypoints), len(lane.waypoints), closest_idx))
         #final_lane = self.generate_lane()
@@ -125,8 +124,8 @@ class WaypointUpdater(object):
         return temp
 
     def pose_cb(self, msg):
-        if time.time() - self.pose_prev_log_time >= 1:
-            self.pose_prev_log_time = time.time()
+        if rospy.get_time() - self.pose_prev_log_time >= 1:
+            self.pose_prev_log_time = rospy.get_time()
             rospy.logwarn('pose_cb(self, msg): %s' % msg)
         self.pose = msg
 

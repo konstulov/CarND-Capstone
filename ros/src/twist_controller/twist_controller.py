@@ -2,7 +2,6 @@ from pid import PID
 from lowpass import LowPassFilter
 from yaw_controller import YawController
 import rospy
-import time
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
@@ -33,7 +32,7 @@ class Controller(object):
         self.wheel_radius = wheel_radius
 
         self.last_time = rospy.get_time()
-        self.prev_log_time = time.time() - 1
+        self.prev_log_time = rospy.get_time() - 1
 
     def control(self, current_vel, dbw_enabled, linear_vel, angular_vel):
         # Return throttle, brake, steer
@@ -63,8 +62,8 @@ class Controller(object):
             decel = max(vel_error, self.decel_limit)
             brake = abs(decel)*self.vehicle_mass*self.wheel_radius # Torque N*m
 
-        if time.time() - self.prev_log_time >= 1:
-            self.prev_log_time = time.time()
+        if rospy.get_time() - self.prev_log_time >= 1:
+            self.prev_log_time = rospy.get_time()
             rospy.logwarn(
                 "Controller.control(\n\tcurrent_vel=%s,\n\tdbw_enabled=%s,\n\tlinear_vel=%s,\n\tangular_vel=%s)"
                 % (orig_current_vel, dbw_enabled, linear_vel, angular_vel))
