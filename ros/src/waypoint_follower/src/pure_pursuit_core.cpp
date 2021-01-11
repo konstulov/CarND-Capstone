@@ -410,7 +410,7 @@ geometry_msgs::TwistStamped PurePursuit::go()
   }
   if (!(prev_log_flag_ & 1)) {
     prev_log_flag_ |= 1;
-    ROS_ERROR_STREAM("prev_log_time_ = " << prev_log_time_ << ": next waypoint = " << num_of_next_waypoint_);
+    ROS_ERROR_STREAM("prev_log_time_ = " << std::fixed << prev_log_time_ << ": next waypoint = " << num_of_next_waypoint_);
   }
 
   // if g_linear_interpolate_mode is false or next waypoint is first or last
