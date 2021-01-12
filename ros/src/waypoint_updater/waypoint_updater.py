@@ -48,6 +48,12 @@ class WaypointUpdater(object):
         self.waypoint_tree = None
         self.prev_log_time = rospy.get_time() - 1
         self.pose_prev_log_time = rospy.get_time() - 1
+        self.closest_index = None
+        self.pose_idx = 0
+        self.pose_arr = []
+        self.pose_time = []
+        self.pose_x = 0
+        self.pose_y = 0
         self.loop()
 
     def loop(self):
@@ -75,12 +81,14 @@ class WaypointUpdater(object):
         pos_vect = np.array([x, y])
 
         val = np.dot(cl_vect-prev_vect, pos_vect-cl_vect)
-
         if val > 0:
             closest_idx = (closest_idx + 1) % len(self.waypoints_2d)
         return closest_idx
 
     def publish_waypoints(self, closest_idx):
+        if self.closest_index and abs(closest_idx - self.closest_index) < 20:
+            return
+        self.closest_index = closest_idx
         lane = Lane()
         lane.header = self.base_waypoints.header
         lane.waypoints = self.base_waypoints.waypoints[closest_idx: closest_idx + LOOKAHEAD_WPS]
@@ -112,7 +120,7 @@ class WaypointUpdater(object):
             p = Waypoint()
             p.pose = wp.pose
 
-            stop_idx = max(self.stopline_wp_idx - closest_idx - 2, 0) # Two waypoints back from line so fron of car stops at line
+            stop_idx = max(self.stopline_wp_idx - closest_idx - 2, 0) # Two waypoints back from line so front of car stops at line
             dist = self.distance(waypoints, i, stop_idx)
             vel = math.sqrt(2 * MAX_DECEL * dist)
             if vel < 1.:
@@ -124,10 +132,22 @@ class WaypointUpdater(object):
         return temp
 
     def pose_cb(self, msg):
+        self.pose = msg
+        self.pose_x = self.pose.pose.position.x
+        self.pose_y = self.pose.pose.position.y
+        avg_pose_speed_mph = 0
+        if len(self.pose_arr) < 10:
+            self.pose_arr.append(np.array([self.pose_x, self.pose_y]))
+            self.pose_time.append(rospy.get_time())
+        else:
+            self.pose_arr[self.pose_idx % 10] = np.array([self.pose_x, self.pose_y])
+            self.pose_time[self.pose_idx % 10] = rospy.get_time()
+            avg_pose_speed_mph = 2.23694 * np.linalg.norm(self.pose_arr[self.pose_idx % 10] - self.pose_arr[(self.pose_idx - 9) % 10]) / (
+                self.pose_time[self.pose_idx % 10] - self.pose_time[(self.pose_idx - 9) % 10])
         if rospy.get_time() - self.pose_prev_log_time >= 1:
             self.pose_prev_log_time = rospy.get_time()
-            rospy.logwarn('pose_cb(self, msg): %s' % msg)
-        self.pose = msg
+            rospy.logwarn('pose_cb(): avg_pose_speed_mph = %.4f' % avg_pose_speed_mph)
+        self.pose_idx += 1
 
     def waypoints_cb(self, waypoints):
         rospy.logwarn('waypoint_updater.py: waypoints_cb(): len(waypoints.waypoints) = %s'
