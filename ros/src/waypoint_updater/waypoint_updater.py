@@ -59,12 +59,12 @@ class WaypointUpdater(object):
     def loop(self):
         rate = rospy.Rate(50)
         while not rospy.is_shutdown():
-            #if self.pose and self.base_lane:
-            if self.pose and self.base_waypoints: # TBR
+            #if self.pose and self.base_waypoints: # TBR
                 # Get closest waypoint
-                closest_waypoint_idx = self.get_closest_waypoint_idx() # TBR
-                self.publish_waypoints(closest_waypoint_idx)
-                #self.publish_waypoints()
+                #closest_waypoint_idx = self.get_closest_waypoint_idx() # TBR
+                #self.publish_waypoints_old(closest_waypoint_idx)
+            if self.pose and self.base_lane:
+                self.publish_waypoints()
             rate.sleep()
 
     def get_closest_waypoint_idx(self):
@@ -85,7 +85,7 @@ class WaypointUpdater(object):
             closest_idx = (closest_idx + 1) % len(self.waypoints_2d)
         return closest_idx
 
-    def publish_waypoints(self, closest_idx):
+    def publish_waypoints_old(self, closest_idx):
         if self.closest_index and abs(closest_idx - self.closest_index) < 20:
             return
         self.closest_index = closest_idx
@@ -97,13 +97,20 @@ class WaypointUpdater(object):
             self.prev_log_time = rospy.get_time()
             rospy.logwarn('rospy.get_time(): %.2f: waypoint_updater.py: publish_waypoints(): len(self.base_waypoints.waypoints) = %s, len(lane.waypoints) = %s, closest_idx = %s'
                           % (rospy.get_time(), len(self.base_waypoints.waypoints), len(lane.waypoints), closest_idx))
-        #final_lane = self.generate_lane()
-        #self.final_waypoints_pub.publish(final_lane)
+
+    def publish_waypoints(self):
+        final_lane = self.generate_lane()
+        if final_lane:
+            self.final_waypoints_pub.publish(final_lane)
 
     def generate_lane(self):
+        closest_idx = self.get_closest_waypoint_idx()
+        if self.closest_index and abs(closest_idx - self.closest_index) < 20:
+            return None
+        self.closest_index = closest_idx
+
         lane = Lane()
 
-        closest_idx = self.get_closest_waypoint_idx()
         farthest_idx = closest_idx + LOOKAHEAD_WPS
         base_waypoints = self.base_lane.waypoints[closest_idx:farthest_idx]
 
@@ -115,12 +122,11 @@ class WaypointUpdater(object):
         return lane
 
     def decelerate_waypoints(self, waypoints, closest_idx):
+        stop_idx = max(self.stopline_wp_idx - closest_idx - 2, 0) # Two waypoints back from line so front of car stops at line
         temp = []
         for i, wp in enumerate(waypoints):
             p = Waypoint()
             p.pose = wp.pose
-
-            stop_idx = max(self.stopline_wp_idx - closest_idx - 2, 0) # Two waypoints back from line so front of car stops at line
             dist = self.distance(waypoints, i, stop_idx)
             vel = math.sqrt(2 * MAX_DECEL * dist)
             if vel < 1.:
@@ -175,9 +181,8 @@ class WaypointUpdater(object):
     def distance(self, waypoints, wp1, wp2):
         dist = 0
         dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-        for i in range(wp1, wp2+1):
-            dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
-            wp1 = i
+        for i in range(wp1, wp2):
+            dist += dl(waypoints[i].pose.pose.position, waypoints[i+1].pose.pose.position)
         return dist
 
 
