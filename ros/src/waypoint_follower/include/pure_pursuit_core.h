@@ -72,6 +72,8 @@ private:
   int num_of_next_waypoint_;
   geometry_msgs::Point position_of_next_target_;
   double lookahead_distance_;
+  double prev_log_time_;
+  mutable int prev_log_flag_;
 
   geometry_msgs::PoseStamped current_pose_;
   geometry_msgs::TwistStamped current_velocity_;
@@ -105,6 +107,8 @@ public:
     , velocity_set_(false)
     , num_of_next_waypoint_(-1)
     , lookahead_distance_(0)
+    , prev_log_time_(ros::Time::now().toSec())
+    , prev_log_flag_(0)
   {
   }
   ~PurePursuit()
