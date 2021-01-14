@@ -75,7 +75,7 @@ class WaypointUpdater(object):
         closest_idx = self.waypoint_tree.query([x, y], 1)[1]
         # Check if closest is ahead or hehind vehicle closest_coord = self.waypoints_2d[closest_idx]
         closest_coord = self.waypoints_2d[closest_idx]
-        prev_coord = self.waypoints_2d[closest_idx-1]
+        prev_coord = self.waypoints_2d[(closest_idx-1) % len(self.waypoints_2d)]
 
         # Equation for hyperplane through closest_coords
         cl_vect = np.array(closest_coord)
@@ -118,15 +118,16 @@ class WaypointUpdater(object):
             base_waypoints += self.base_lane.waypoints[:farthest_idx]
             use_base_wpts = (farthest_idx <= self.stopline_wp_idx) and (self.stopline_wp_idx < closest_idx)
 
-        if self.stopline_wp_idx == -1 or use_base_wpts:
+        use_base_wpts = use_base_wpts or self.stopline_wp_idx == -1
+        if use_base_wpts:
             lane.waypoints = base_waypoints
         else:
             lane.waypoints = self.decelerate_waypoints(base_waypoints, closest_idx)
 
         if rospy.get_time() - self.prev_log_time >= 1:
             self.prev_log_time = rospy.get_time()
-            rospy.logwarn('WaypointUpdater.generate_lane(): len(self.base_lane.waypoints) = %s, len(lane.waypoints) = %s, closest_idx = %s'
-                          % (len(self.base_lane.waypoints), len(lane.waypoints), closest_idx))
+            rospy.logwarn('WaypointUpdater.generate_lane(): len(base_lane.waypoints) = %s, len(lane.waypoints) = %s, closest_idx = %s, farthest_idx = %s, stopline_wp_idx = %s, use_bw = %s, self.base_lane.waypoints[%s].twist.twist.linear.x = %s'
+                          % (len(self.base_lane.waypoints), len(lane.waypoints), closest_idx, farthest_idx, self.stopline_wp_idx, use_base_wpts, closest_idx, self.base_lane.waypoints[closest_idx].twist.twist.linear.x))
         return lane
 
     def decelerate_waypoints(self, waypoints, closest_idx):
