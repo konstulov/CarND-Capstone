@@ -34,13 +34,11 @@ class WaypointUpdater(object):
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
-
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
 
         self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
         self.base_lane = None
         self.pose = None
         self.stopline_wp_idx = -1
@@ -49,13 +47,6 @@ class WaypointUpdater(object):
         self.waypoint_tree = None
         self.prev_update_time = rospy.get_time() - PUBLISH_DELAY
         self.prev_log_time = rospy.get_time() - 1
-        self.pose_prev_log_time = rospy.get_time() - 1
-        self.traffic_prev_log_time = rospy.get_time() - 1
-        self.pose_idx = 0
-        self.pose_arr = []
-        self.pose_time = []
-        self.pose_x = 0
-        self.pose_y = 0
         self.loop()
 
     def loop(self):
@@ -95,10 +86,6 @@ class WaypointUpdater(object):
         lane.header = self.base_waypoints.header
         lane.waypoints = self.base_waypoints.waypoints[closest_idx: closest_idx + LOOKAHEAD_WPS]
         self.final_waypoints_pub.publish(lane)
-        if rospy.get_time() - self.prev_log_time >= 1:
-            self.prev_log_time = rospy.get_time()
-            rospy.logwarn('WaypointUpdater.publish_waypoints(): len(self.base_waypoints.waypoints) = %s, len(lane.waypoints) = %s, closest_idx = %s'
-                          % (len(self.base_waypoints.waypoints), len(lane.waypoints), closest_idx))
 
     def publish_waypoints(self):
         if rospy.get_time() - self.prev_update_time < PUBLISH_DELAY:
@@ -148,21 +135,6 @@ class WaypointUpdater(object):
 
     def pose_cb(self, msg):
         self.pose = msg
-        self.pose_x = self.pose.pose.position.x
-        self.pose_y = self.pose.pose.position.y
-        avg_pose_speed_mph = 0
-        if len(self.pose_arr) < 10:
-            self.pose_arr.append(np.array([self.pose_x, self.pose_y]))
-            self.pose_time.append(rospy.get_time())
-        else:
-            self.pose_arr[self.pose_idx % 10] = np.array([self.pose_x, self.pose_y])
-            self.pose_time[self.pose_idx % 10] = rospy.get_time()
-            avg_pose_speed_mph = 2.23694 * np.linalg.norm(self.pose_arr[self.pose_idx % 10] - self.pose_arr[(self.pose_idx - 9) % 10]) / (
-                self.pose_time[self.pose_idx % 10] - self.pose_time[(self.pose_idx - 9) % 10])
-        if rospy.get_time() - self.pose_prev_log_time >= 1:
-            self.pose_prev_log_time = rospy.get_time()
-            rospy.logwarn('WaypointUpdater.pose_cb(): avg_pose_speed_mph = %.4f' % avg_pose_speed_mph)
-        self.pose_idx += 1
 
     def waypoints_cb(self, waypoints):
         rospy.logwarn('WaypointUpdater.waypoints_cb(): len(waypoints.waypoints) = %s'
@@ -174,11 +146,7 @@ class WaypointUpdater(object):
             self.waypoint_tree = KDTree(self.waypoints_2d)
 
     def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
         self.stopline_wp_idx = msg.data
-        if rospy.get_time() - self.traffic_prev_log_time >= 1:
-            self.traffic_prev_log_time = rospy.get_time()
-            rospy.logwarn('WaypointUpdater.traffic_cb(): self.stopline_wp_idx = %s' % self.stopline_wp_idx)
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later

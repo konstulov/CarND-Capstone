@@ -62,12 +62,12 @@ class Controller(object):
             decel = max(vel_error, self.decel_limit)
             brake = abs(decel)*self.vehicle_mass*self.wheel_radius # Torque N*m
 
-        if rospy.get_time() - self.prev_log_time >= 1:
-            self.prev_log_time = rospy.get_time()
-            rospy.logwarn(
-                "Controller.control(\n\tcurrent_vel=%s,\n\tdbw_enabled=%s,\n\tlinear_vel=%s,\n\tangular_vel=%s)"
-                % (orig_current_vel, dbw_enabled, linear_vel, angular_vel))
-            rospy.logwarn("Controller.control(): current_vel=%s, steering=%s, throttle=%s, brake=%s"
-                          % (current_vel, steering, throttle, brake))
+        #if rospy.get_time() - self.prev_log_time >= 1:
+        #    self.prev_log_time = rospy.get_time()
+        #    rospy.logwarn(
+        #        "Controller.control(\n\tcurrent_vel=%s,\n\tdbw_enabled=%s,\n\tlinear_vel=%s,\n\tangular_vel=%s)"
+        #        % (orig_current_vel, dbw_enabled, linear_vel, angular_vel))
+        #    rospy.logwarn("Controller.control(): current_vel=%s, steering=%s, throttle=%s, brake=%s"
+        #                  % (current_vel, steering, throttle, brake))
 
         return throttle, brake, steering

@@ -84,12 +84,12 @@ class DBWNode(object):
                                                                                    self.dbw_enabled,
                                                                                    self.linear_vel,
                                                                                    self.angular_vel)
-                rospy.loginfo('dbw_node.py: loop(): self.controller.control(%s, %s, %s, %s)'
-                              % (self.current_vel, self.dbw_enabled, self.linear_vel, self.angular_vel))
+                #rospy.loginfo('dbw_node.py: loop(): self.controller.control(%s, %s, %s, %s)'
+                #              % (self.current_vel, self.dbw_enabled, self.linear_vel, self.angular_vel))
             if self.dbw_enabled:
                 self.publish(self.throttle, self.brake, self.steering)
-                rospy.loginfo('dbw_node.py: loop(): self.publish(%s, %s, %s)'
-                              % (self.throttle, self.brake, self.steering))
+                #rospy.loginfo('dbw_node.py: loop(): self.publish(%s, %s, %s)'
+                #              % (self.throttle, self.brake, self.steering))
             rate.sleep()
 
     def dbw_enabled_cb(self, msg):

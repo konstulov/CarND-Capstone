@@ -80,9 +80,9 @@ class TLDetector(object):
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
-        if rospy.get_time() - self.prev_log_time >= 1:
-            self.prev_log_time = rospy.get_time()
-            rospy.logwarn('TLDetector.image_cb(): light_wp = %s, state = %s' % (light_wp, state))
+        #if rospy.get_time() - self.prev_log_time >= 1:
+        #    self.prev_log_time = rospy.get_time()
+        #    rospy.logwarn('TLDetector.image_cb(): light_wp = %s, state = %s' % (light_wp, state))
 
         '''
         Publish upcoming red lights at camera frequency.
