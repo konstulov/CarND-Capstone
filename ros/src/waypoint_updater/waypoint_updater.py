@@ -26,6 +26,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 MAX_DECEL = 0.5
+PUBLISH_DELAY = 0.5
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -46,10 +47,10 @@ class WaypointUpdater(object):
         self.base_lane = None
         self.waypoints_2d = None
         self.waypoint_tree = None
+        self.prev_update_time = rospy.get_time() - PUBLISH_DELAY
         self.prev_log_time = rospy.get_time() - 1
         self.pose_prev_log_time = rospy.get_time() - 1
         self.traffic_prev_log_time = rospy.get_time() - 1
-        self.closest_index = None
         self.pose_idx = 0
         self.pose_arr = []
         self.pose_time = []
@@ -87,9 +88,9 @@ class WaypointUpdater(object):
         return closest_idx
 
     def publish_waypoints_old(self, closest_idx):
-        if self.closest_index and abs(closest_idx - self.closest_index) < 20:
+        if rospy.get_time() - self.prev_update_time < PUBLISH_DELAY:
             return
-        self.closest_index = closest_idx
+        self.prev_update_time = rospy.get_time()
         lane = Lane()
         lane.header = self.base_waypoints.header
         lane.waypoints = self.base_waypoints.waypoints[closest_idx: closest_idx + LOOKAHEAD_WPS]
@@ -100,18 +101,15 @@ class WaypointUpdater(object):
                           % (len(self.base_waypoints.waypoints), len(lane.waypoints), closest_idx))
 
     def publish_waypoints(self):
+        if rospy.get_time() - self.prev_update_time < PUBLISH_DELAY:
+            return
+        self.prev_update_time = rospy.get_time()
         final_lane = self.generate_lane()
-        if final_lane:
-            self.final_waypoints_pub.publish(final_lane)
+        self.final_waypoints_pub.publish(final_lane)
 
     def generate_lane(self):
-        closest_idx = self.get_closest_waypoint_idx()
-        if self.closest_index and abs(closest_idx - self.closest_index) < 20:
-            return None
-        self.closest_index = closest_idx
-
         lane = Lane()
-
+        closest_idx = self.get_closest_waypoint_idx()
         farthest_idx = closest_idx + LOOKAHEAD_WPS
         base_waypoints = self.base_lane.waypoints[closest_idx:farthest_idx]
 
