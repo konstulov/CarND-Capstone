@@ -78,6 +78,10 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
+        try:
+            self.light_classifier
+        except AttributeError:
+            return
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
@@ -113,7 +117,6 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
         closest_idx = self.waypoint_tree.query([x, y], 1)[1]
         return closest_idx
 
@@ -134,7 +137,8 @@ class TLDetector(object):
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
         #Get classification
-        self.light_classifier.get_classification(cv_image)
+        if self.light_classifier is not None:
+            self.light_classifier.get_classification(cv_image)
         #return self.light_classifier.get_classification(cv_image)
 
         # for testing simply return the light state

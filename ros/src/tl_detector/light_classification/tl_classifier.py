@@ -2,6 +2,7 @@ from styx_msgs.msg import TrafficLight
 import rospy
 import numpy as np
 import tensorflow as tf
+from PIL import Image
 
 SSD_GRAPH_FILE = '/home/workspace/data/ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb'
 
@@ -26,6 +27,7 @@ class TLClassifier(object):
         self.detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
         
         self.sess = tf.Session(graph=self.detection_graph)
+        self.img_count = 0
 
     @staticmethod
     def load_graph(graph_file):
@@ -62,10 +64,57 @@ class TLClassifier(object):
         classes = np.squeeze(classes)
 
         # Filter boxes with a confidence score less than min_conf
-        boxes, scores, classes = self.filter_boxes(min_conf, boxes, scores, classes, cls)
+        return self.filter_boxes(min_conf, boxes, scores, classes, cls)
 
-        return scores, classes
+    @staticmethod
+    def to_image_coords(boxes, height, width):
+        """
+        The original box coordinate output is normalized, i.e [0, 1].
 
+        This converts it back to the original coordinate based on the image
+        size.
+        """
+        box_coords = np.zeros_like(boxes)
+        box_coords[:, 0] = boxes[:, 0] * height
+        box_coords[:, 1] = boxes[:, 1] * width
+        box_coords[:, 2] = boxes[:, 2] * height
+        box_coords[:, 3] = boxes[:, 3] * width
+
+        return box_coords
+
+    @staticmethod
+    def traffic_light_color_detector(img, box_coords, scores, color_thresh=225, l_tol=0.001, u_tol=0.9):
+        """
+        image -- BGR image
+        """
+        if len(scores) == 0:
+            return "NONE", 0
+        # index of the most confident bounding box
+        b_idx = np.argmax(scores)
+        y0 = int(box_coords[b_idx, 0])
+        x0 = int(box_coords[b_idx, 1])
+        y1 = int(box_coords[b_idx, 2])
+        x1 = int(box_coords[b_idx, 3])
+        crop_img = img[y0:y1, x0:x1, :]
+        rospy.logwarn('TLClassifier.traffic_light_color_detector(): b_idx = %s, box_coords[b_idx] = %s'
+                      % (b_idx, box_coords[b_idx]))
+        r_mask = crop_img[:,:,2] > color_thresh
+        g_mask = crop_img[:,:,1] > color_thresh
+        r_sum = np.sum(crop_img[:, :, 2][r_mask])
+        g_sum = np.sum(crop_img[:, :, 1][g_mask])
+        if r_sum == 0 and g_sum == 0:
+            return "NONE", np.nan
+        r = min(r_sum, g_sum) / max(r_sum, g_sum)
+        if r < l_tol:
+            if r_sum < g_sum:
+                return "GREEN", r
+            else:
+                return "RED", r
+
+        if r > u_tol:
+            return "YELLOW", r
+        return "NONE", r
+    
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
 
@@ -78,9 +127,18 @@ class TLClassifier(object):
         """
         #TODO implement light color prediction
         img = np.asarray(image)
-        # cls==10 is for traffic light
-        scrores, classes = self.pipeline_img(img, min_conf=0.5, cls=10)
         if rospy.get_time() - self.prev_log_time >= 1:
             self.prev_log_time = rospy.get_time()
-            rospy.logwarn('TLClassifier.get_classification(): len(scrores) = %d' % len(scrores))
+            # cls==10 is for traffic light
+            boxes, scores, classes = self.pipeline_img(img, min_conf=0.5, cls=10)
+            height, width, _ = img.shape
+            box_coords = self.to_image_coords(boxes, height, width)
+            color, ratio = self.traffic_light_color_detector(img, box_coords, scores)
+            rospy.logwarn('TLClassifier.get_classification(): len(classes) = %d, color = %s, ratio = %.4f'
+                          % (len(classes), color, ratio))
+            #if len(scores) > 0:
+            #    img = img[:,:,::-1]
+            #    im = Image.fromarray(img)
+            #    im.save("/home/workspace/data/images/img_%03d.jpeg" % self.img_count)
+            #    self.img_count += 1
         return TrafficLight.UNKNOWN
