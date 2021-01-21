@@ -52,6 +52,7 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+        rospy.logwarn('TLDetector.__init__(): type(self.light_classifier) = %s' % type(self.light_classifier))
 
         rospy.spin()
 
