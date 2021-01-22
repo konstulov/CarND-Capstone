@@ -1,10 +1,19 @@
+import os
+import subprocess as sp
+
 from styx_msgs.msg import TrafficLight
 import rospy
 import numpy as np
 import tensorflow as tf
 from PIL import Image
 
-SSD_GRAPH_FILE = '/home/workspace/data/ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb'
+TF_MODEL_URL_PREFIX = 'http://download.tensorflow.org/models/object_detection'
+TF_MODEL_NAME = 'ssd_mobilenet_v1_coco_11_06_2017'
+TF_MODEL_TAR_FILE = '%s.tar.gz' % TF_MODEL_NAME
+TF_MODEL_URL = '%s/%s' % (TF_MODEL_URL_PREFIX, TF_MODEL_TAR_FILE)
+DATA_DIRECTORY = '/home/workspace/data'
+SSD_GRAPH_FILE = '%s/%s/frozen_inference_graph.pb' % (DATA_DIRECTORY, TF_MODEL_NAME)
+
 DETECT_TIME_DELAY = 0.1
 DEBUG = False
 
@@ -14,14 +23,17 @@ class TLClassifier(object):
         self.curr_color = TrafficLight.UNKNOWN
         self.curr_count = 0
         self.prev_detect_time = rospy.get_time() - DETECT_TIME_DELAY
-        
+
+        # Download classifier
+        self.download_classifier()
+
         # Load classifier
         self.detection_graph = self.load_graph(SSD_GRAPH_FILE)
-        
+
         # The input placeholder for the image.
         # `get_tensor_by_name` returns the Tensor with the associated name in the Graph.
         self.image_tensor = self.detection_graph.get_tensor_by_name('image_tensor:0')
-        
+
         # Each box represents a part of the image where a particular object was detected.
         self.detection_boxes = self.detection_graph.get_tensor_by_name('detection_boxes:0')
 
@@ -31,8 +43,17 @@ class TLClassifier(object):
 
         # The classification of the object (integer id).
         self.detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
-        
+
         self.sess = tf.Session(graph=self.detection_graph)
+
+    @staticmethod
+    def download_classifier():
+        if os.path.exists(SSD_GRAPH_FILE):
+            return
+        sp.check_output('mkdir -p %s' % DATA_DIRECTORY, shell=True)
+        sp.check_output('wget %s -P %s' % (TF_MODEL_URL, DATA_DIRECTORY), shell=True)
+        sp.check_output('tar xzf %s/%s --directory %s'
+                        % (DATA_DIRECTORY, TF_MODEL_TAR_FILE, DATA_DIRECTORY), shell=True)
 
     @staticmethod
     def load_graph(graph_file):
@@ -108,10 +129,10 @@ class TLClassifier(object):
         g_mask = crop_img[:,:,1] > color_thresh
         r_sum = np.sum(crop_img[:, :, 2][r_mask])
         g_sum = np.sum(crop_img[:, :, 1][g_mask])
-        
+
         if r_sum == 0 and g_sum == 0:
             return TrafficLight.UNKNOWN, np.nan
-        
+
         r = min(r_sum, g_sum) / max(r_sum, g_sum)
         if r < l_tol:
             if r_sum < g_sum:
@@ -121,9 +142,9 @@ class TLClassifier(object):
 
         if r > u_tol:
             return TrafficLight.YELLOW, r
-        
+
         return TrafficLight.UNKNOWN, r
-    
+
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
 
@@ -136,7 +157,7 @@ class TLClassifier(object):
         """
         if rospy.get_time() - self.prev_detect_time < DETECT_TIME_DELAY:
             return self.prev_color
-        
+
         img = np.asarray(image)
         self.prev_detect_time = rospy.get_time()
         # cls==10 is for traffic light
