@@ -6,15 +6,16 @@ from PIL import Image
 
 SSD_GRAPH_FILE = '/home/workspace/data/ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb'
 DETECT_TIME_DELAY = 0.1
+DEBUG = False
 
 class TLClassifier(object):
     def __init__(self):
-        #TODO load classifier
         self.prev_color = TrafficLight.UNKNOWN
         self.curr_color = TrafficLight.UNKNOWN
         self.curr_count = 0
-        self.prev_log_time = rospy.get_time() - 1
         self.prev_detect_time = rospy.get_time() - DETECT_TIME_DELAY
+        
+        # Load classifier
         self.detection_graph = self.load_graph(SSD_GRAPH_FILE)
         
         # The input placeholder for the image.
@@ -89,7 +90,7 @@ class TLClassifier(object):
     @staticmethod
     def traffic_light_color_detector(img, box_coords, scores, color_thresh=225, l_tol=0.001, u_tol=0.9):
         """
-        image -- BGR image
+        img -- BGR image
         """
         if len(scores) == 0:
             return TrafficLight.UNKNOWN, 0
@@ -100,8 +101,9 @@ class TLClassifier(object):
         y1 = int(box_coords[b_idx, 2])
         x1 = int(box_coords[b_idx, 3])
         crop_img = img[y0:y1, x0:x1, :]
-        rospy.logwarn('TLClassifier.traffic_light_color_detector(): b_idx = %s, box_coords[b_idx] = %s'
-                      % (b_idx, box_coords[b_idx]))
+        if DEBUG:
+            rospy.logwarn('TLClassifier.traffic_light_color_detector(): b_idx = %s, box_coords[b_idx] = %s'
+                          % (b_idx, box_coords[b_idx]))
         r_mask = crop_img[:,:,2] > color_thresh
         g_mask = crop_img[:,:,1] > color_thresh
         r_sum = np.sum(crop_img[:, :, 2][r_mask])
@@ -148,15 +150,12 @@ class TLClassifier(object):
             self.prev_color = self.curr_color
             self.curr_color = color
             self.curr_count = 0
-        rospy.logwarn('TLClassifier.get_classification(): len(classes) = %d, prev_color = %s, curr_color = %s, curr_count = %s, ratio = %.4f'
-                      % (len(classes), self.prev_color, self.curr_color, self.curr_count, ratio))
-        #if len(scores) > 0:
-        #    img = img[:,:,::-1]
-        #    im = Image.fromarray(img)
-        #    im.save("/home/workspace/data/images/img_%03d.jpeg" % self.img_count)
-        #    self.img_count += 1
+        if DEBUG:
+            rospy.logwarn('TLClassifier.get_classification(): len(classes) = %d, '
+                          'prev_color = %s, curr_color = %s, curr_count = %s, ratio = %.4f'
+                          % (len(classes), self.prev_color, self.curr_color, self.curr_count, ratio))
         ret_color = self.curr_color
         if self.prev_color == TrafficLight.RED and self.curr_color == TrafficLight.UNKNOWN and self.curr_count < 3:
-            # Reduce false positives following a previous red light
+            # Reduce false positives following a previously detected red light
             ret_color = TrafficLight.RED
         return ret_color

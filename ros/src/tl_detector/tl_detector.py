@@ -18,7 +18,6 @@ class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
 
-        self.prev_log_time = rospy.get_time() - 1
         self.pose = None
         self.waypoints = None
         self.waypoints_2d = None
@@ -85,9 +84,6 @@ class TLDetector(object):
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
-        #if rospy.get_time() - self.prev_log_time >= 1:
-        #    self.prev_log_time = rospy.get_time()
-        #    rospy.logwarn('TLDetector.image_cb(): light_wp = %s, state = %s' % (light_wp, state))
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -138,7 +134,6 @@ class TLDetector(object):
         #Get classification
         if self.light_classifier is not None:
             return self.light_classifier.get_classification(cv_image)
-        #return self.light_classifier.get_classification(cv_image)
 
         # for testing simply return the light state
         return light.state
@@ -154,14 +149,12 @@ class TLDetector(object):
         """
         closest_light = None
         line_wp_idx = None
-        #light = None
 
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
         if(self.pose):
-            #car_position = self.get_closest_waypoint(self.pose.pose)
             car_wp_idx = self.get_closest_waypoint(self.pose.pose.position.x, self.pose.pose.position.y)
-            # TODO find the closest visible traffic light (if one exists)
+            # find the closest visible traffic light (if one exists)
             diff = len(self.waypoints.waypoints)
             for i, light in enumerate(self.lights):
                 # Get stop line waypoint index
@@ -178,10 +171,6 @@ class TLDetector(object):
             state = self.get_light_state(closest_light)
             return line_wp_idx, state
 
-        #if light:
-        #    state = self.get_light_state(light)
-        #    return light_wp, state
-        #self.waypoints = None
         return -1, TrafficLight.UNKNOWN
 
 
