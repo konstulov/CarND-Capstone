@@ -115,7 +115,6 @@ class TLDetector(object):
 
         Returns:
             int: index of the closest waypoint in self.waypoints
-
         """
         closest_idx = self.waypoint_tree.query([x, y], 1)[1]
         return closest_idx
@@ -138,7 +137,7 @@ class TLDetector(object):
 
         #Get classification
         if self.light_classifier is not None:
-            self.light_classifier.get_classification(cv_image)
+            return self.light_classifier.get_classification(cv_image)
         #return self.light_classifier.get_classification(cv_image)
 
         # for testing simply return the light state
