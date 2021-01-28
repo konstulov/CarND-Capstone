@@ -1,5 +1,7 @@
 import os
 import subprocess as sp
+import shutil
+import tempfile
 
 from styx_msgs.msg import TrafficLight
 import rospy
@@ -11,8 +13,6 @@ TF_MODEL_URL_PREFIX = 'http://download.tensorflow.org/models/object_detection'
 TF_MODEL_NAME = 'ssd_mobilenet_v1_coco_11_06_2017'
 TF_MODEL_TAR_FILE = '%s.tar.gz' % TF_MODEL_NAME
 TF_MODEL_URL = '%s/%s' % (TF_MODEL_URL_PREFIX, TF_MODEL_TAR_FILE)
-DATA_DIRECTORY = '/home/workspace/data'
-SSD_GRAPH_FILE = '%s/%s/frozen_inference_graph.pb' % (DATA_DIRECTORY, TF_MODEL_NAME)
 
 DETECT_TIME_DELAY = 0.1
 DEBUG = False
@@ -24,11 +24,13 @@ class TLClassifier(object):
         self.curr_count = 0
         self.prev_detect_time = rospy.get_time() - DETECT_TIME_DELAY
 
+        self.data_directory = tempfile.mkdtemp()
+        self.ssd_graph_file = '%s/%s/frozen_inference_graph.pb' % (self.data_directory, TF_MODEL_NAME)
         # Download classifier
-        self.download_classifier()
+        self.download_classifier(self.data_directory)
 
         # Load classifier
-        self.detection_graph = self.load_graph(SSD_GRAPH_FILE)
+        self.detection_graph = self.load_graph(self.ssd_graph_file)
 
         # The input placeholder for the image.
         # `get_tensor_by_name` returns the Tensor with the associated name in the Graph.
@@ -45,15 +47,20 @@ class TLClassifier(object):
         self.detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
 
         self.sess = tf.Session(graph=self.detection_graph)
+        
+    def __del__(self):
+        shutil.rmtree(self.data_directory)
+        rospy.logwarn('TLClassifier.__del__(): removed temporary data directory %s'
+                      % self.data_directory)
 
     @staticmethod
-    def download_classifier():
-        if os.path.exists(SSD_GRAPH_FILE):
-            return
-        sp.check_output('mkdir -p %s' % DATA_DIRECTORY, shell=True)
-        sp.check_output('wget %s -P %s' % (TF_MODEL_URL, DATA_DIRECTORY), shell=True)
+    def download_classifier(data_directory):
+        sp.check_output('mkdir -p %s' % data_directory, shell=True)
+        sp.check_output('wget %s -P %s' % (TF_MODEL_URL, data_directory), shell=True)
         sp.check_output('tar xzf %s/%s --directory %s'
-                        % (DATA_DIRECTORY, TF_MODEL_TAR_FILE, DATA_DIRECTORY), shell=True)
+                        % (data_directory, TF_MODEL_TAR_FILE, data_directory), shell=True)
+        rospy.logwarn('TLClassifier.download_classifier(): downloaded pre-trained TF model to %s'
+                      % data_directory)
 
     @staticmethod
     def load_graph(graph_file):
